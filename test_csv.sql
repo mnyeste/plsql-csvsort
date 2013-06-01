@@ -6,69 +6,72 @@ declare
   function sort_csv_string(i_original in varchar2)
     return varchar2
   is
-    v_count integer;
+    l_count integer;
   
-    v_str_array dbms_utility.lname_array;
-    v_str_array_sorted dbms_utility.lname_array;
+    l_str_array dbms_utility.lname_array;
+    l_str_array_sorted dbms_utility.lname_array;
     
-    v_str_table t_temp_str_table := t_temp_str_table();
-    v_str_table_sorted t_temp_str_table;
+    l_str_table t_temp_str_table := t_temp_str_table();
+    l_str_table_sorted t_temp_str_table;
    
-    v_sorted varchar2(2048);
+    l_sorted varchar2(2048);
   
   begin
 
-    dbms_utility.comma_to_table(i_original, v_count, v_str_array);
+    dbms_utility.comma_to_table(i_original, l_count, l_str_array);
 
-    for i in 1..v_count 
+    for i in 1..l_count 
     loop
-        v_str_table.extend;
-        v_str_table(i) := v_str_array(i);
+        l_str_table.extend;
+        l_str_table(i) := l_str_array(i);
     end loop;
   
     select trim(column_value) bulk collect 
-    into v_str_table_sorted from table(v_str_table) order by 1;
+    into l_str_table_sorted from table(l_str_table) order by 1;
 
-    for i in 1..v_count
+    for i in 1..l_count
     loop
-      v_str_array_sorted(i) := v_str_table_sorted(i);
+      l_str_array_sorted(i) := l_str_table_sorted(i);
     end loop;
   
-    dbms_utility.table_to_comma(v_str_array_sorted, v_count, v_sorted);
+    dbms_utility.table_to_comma(l_str_array_sorted, l_count, l_sorted);
   
-    return v_sorted;
+    return l_sorted;
   end;
 
   procedure sort_and_update_csv_field(i_table_name in varchar2, i_field_name in varchar2)
   is 
-    type r_cursor is REF CURSOR;
-    cur r_cursor;
+    type t_ref_cursor is REF CURSOR;
+    c_records_with_csv_value t_ref_cursor;
     
-    v_tmp_str varchar2(2048);
+    l_sorted_str varchar2(2048);
     
-    v_row_id rowid;
-    v_csvfield varchar2(2048);
+    l_row_id rowid;
+    l_csv_field varchar2(2048);
     
-    l_sql_str VARCHAR2(200);
-    l_update_str VARCHAR2(200);
+    l_select_str varchar2(200);
+    l_update_str varchar2(200);
         
   begin
     
-    l_sql_str := 'select rowid, ' || i_field_name || ' from ' || i_table_name ||' where ' || i_field_name || ' like ''%,%''';
+    l_select_str := 'select rowid, ' || i_field_name || 
+                    ' from ' || i_table_name ||
+                    ' where ' || i_field_name || ' like ''%,%''';
      
-    open cur for l_sql_str;
+    open c_records_with_csv_value for l_select_str;
     
     loop
-      fetch cur into v_row_id, v_csvfield;
-      exit when cur%notfound;
+      fetch c_records_with_csv_value into l_row_id, l_csv_field;
+      exit when c_records_with_csv_value%notfound;
           
-      v_tmp_str :=  sort_csv_string(v_csvfield);
+      l_sorted_str :=  sort_csv_string(l_csv_field);
     
       l_update_str := 'update ' || i_table_name || 
-                      ' set ' || i_field_name || ' = ''' || v_tmp_str ||
-                      ''' where rowid = '''  || v_row_id || '''';
+                      ' set ' || i_field_name || ' = ''' || l_sorted_str ||
+                      ''' where rowid = '''  || l_row_id || '''';
       
       execute immediate l_update_str;
+      commit;
     
     end loop;
   end;

@@ -27,3 +27,5 @@ Insert into TEST_DATA2 (ID,num,LISTOFVALUES) values ('test02',20,'tuv,yxc,jkl ')
 Insert into TEST_DATA2 (ID,num,LISTOFVALUES) values ('test03',30,'ghj');
 Insert into TEST_DATA2 (ID,num,LISTOFVALUES) values ('test04',40,null);
 Insert into TEST_DATA2 (ID,num,LISTOFVALUES) values ('test05',50,'abc,xyz,ghj');
+Insert into TEST_DATA2 (ID,num,LISTOFVALUES) values ('test06',50,'abc-special,x-xyz,b*ghj');
+
