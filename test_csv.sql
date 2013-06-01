@@ -3,7 +3,7 @@ create or replace type t_temp_str_table is table of varchar2(2048);
 
 declare  
 
-  function sort_csv_string(v_original in varchar2)
+  function sort_csv_string(i_original in varchar2)
     return varchar2
   is
     v_count integer;
@@ -18,7 +18,7 @@ declare
   
   begin
 
-    dbms_utility.comma_to_table(v_original, v_count, v_str_array);
+    dbms_utility.comma_to_table(i_original, v_count, v_str_array);
 
     for i in 1..v_count 
     loop
@@ -50,7 +50,8 @@ declare
     v_csvfield varchar2(2048);
     
     l_sql_str VARCHAR2(200);
-    
+    l_update_str VARCHAR2(200);
+        
   begin
     
     l_sql_str := 'select rowid, ' || i_field_name || ' from ' || i_table_name ||' where ' || i_field_name || ' like ''%,%''';
@@ -63,17 +64,17 @@ declare
           
       v_tmp_str :=  sort_csv_string(v_csvfield);
     
+      l_update_str := 'update ' || i_table_name || 
+                      ' set ' || i_field_name || ' = ''' || v_tmp_str ||
+                      ''' where rowid = '''  || v_row_id || '''';
       
-    
-      update test_data1 
-      set csvfield =  v_tmp_str
-      where rowid = v_row_id;
+      execute immediate l_update_str;
     
     end loop;
   end;
 
 
 begin  
-  --dbms_output.put_line('Sorted: ' || sort_csv_string('asd,zui,fgh'));
   sort_and_update_csv_field('test_data1','csvfield');
+  sort_and_update_csv_field('test_data2','listofvalues');
 end;
