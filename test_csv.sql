@@ -1,40 +1,26 @@
-create or replace type t_temp_str_table is table of varchar2(2048); 
-/
-
 declare  
 
   function sort_csv_string(i_original in varchar2)
     return varchar2
   is
-    l_count integer;
-  
-    l_str_array dbms_utility.lname_array;
-    l_str_array_sorted dbms_utility.lname_array;
-    
-    l_str_table t_temp_str_table := t_temp_str_table();
-    l_str_table_sorted t_temp_str_table;
-   
     l_sorted varchar2(2048);
-  
   begin
+    
+    for rec in 
+      (select trim(regexp_substr (str, '[^,]+', 1, rownum)) token  
+          from (select i_original str from dual)
+          connect by level <= regexp_count (str, '[^,]+')
+          order by 1)
+       loop
+       
+       if (l_sorted is not null) then
+        l_sorted := l_sorted || ',';
+        end if;
+      
+      l_sorted := l_sorted || rec.token;
 
-    dbms_utility.comma_to_table(i_original, l_count, l_str_array);
-
-    for i in 1..l_count 
-    loop
-        l_str_table.extend;
-        l_str_table(i) := l_str_array(i);
-    end loop;
-  
-    select trim(column_value) bulk collect 
-    into l_str_table_sorted from table(l_str_table) order by 1;
-
-    for i in 1..l_count
-    loop
-      l_str_array_sorted(i) := l_str_table_sorted(i);
-    end loop;
-  
-    dbms_utility.table_to_comma(l_str_array_sorted, l_count, l_sorted);
+      --dbms_output.put_line(rec.token);
+    end loop;   
   
     return l_sorted;
   end;
@@ -47,7 +33,7 @@ declare
     l_sorted_str varchar2(2048);
     
     l_row_id rowid;
-    l_csv_field varchar2(2048);
+    l_csv_field_value varchar2(2048);
     
     l_select_str varchar2(200);
     l_update_str varchar2(200);
@@ -61,10 +47,10 @@ declare
     open c_records_with_csv_value for l_select_str;
     
     loop
-      fetch c_records_with_csv_value into l_row_id, l_csv_field;
+      fetch c_records_with_csv_value into l_row_id, l_csv_field_value;
       exit when c_records_with_csv_value%notfound;
           
-      l_sorted_str :=  sort_csv_string(l_csv_field);
+      l_sorted_str :=  sort_csv_string(l_csv_field_value);
     
       l_update_str := 'update ' || i_table_name || 
                       ' set ' || i_field_name || ' = ''' || l_sorted_str ||
