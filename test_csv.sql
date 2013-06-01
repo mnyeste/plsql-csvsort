@@ -39,27 +39,41 @@ declare
     return v_sorted;
   end;
 
-  procedure sort_and_update_csv_field(table_name in varchar2)
+  procedure sort_and_update_csv_field(i_table_name in varchar2, i_field_name in varchar2)
   is 
-    v_tmp_str varchar2(2048);
-  begin
-      
-    for rec in 
-      (select rowid, csvfield from test_data1
-       where csvfield like '%,%') 
-    loop
-      dbms_output.put_line(rec.csvfield);
+    type r_cursor is REF CURSOR;
+    cur r_cursor;
     
-      v_tmp_str :=  sort_csv_string(rec.csvfield);
+    v_tmp_str varchar2(2048);
+    
+    v_row_id rowid;
+    v_csvfield varchar2(2048);
+    
+    l_sql_str VARCHAR2(200);
+    
+  begin
+    
+    l_sql_str := 'select rowid, ' || i_field_name || ' from ' || i_table_name ||' where ' || i_field_name || ' like ''%,%''';
+     
+    open cur for l_sql_str;
+    
+    loop
+      fetch cur into v_row_id, v_csvfield;
+      exit when cur%notfound;
+          
+      v_tmp_str :=  sort_csv_string(v_csvfield);
+    
+      
     
       update test_data1 
       set csvfield =  v_tmp_str
-      where rowid = rec.rowid;
+      where rowid = v_row_id;
+    
     end loop;
   end;
 
 
 begin  
   --dbms_output.put_line('Sorted: ' || sort_csv_string('asd,zui,fgh'));
-  sort_and_update_csv_field;
+  sort_and_update_csv_field('test_data1','csvfield');
 end;
