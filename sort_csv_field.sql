@@ -5,7 +5,7 @@ declare
   is
     l_sorted varchar2(2048);
   begin
-    
+      
     for rec in 
       (select trim(regexp_substr (str, '[^,]+', 1, rownum)) token  
           from (select i_original str from dual)
@@ -18,8 +18,6 @@ declare
         end if;
       
       l_sorted := l_sorted || rec.token;
-
-      --dbms_output.put_line(rec.token);
     end loop;   
   
     return l_sorted;
@@ -40,6 +38,9 @@ declare
         
   begin
     
+    dbms_output.put_line('Start sorting of ' || upper(i_field_name) || ' field in table ' || upper(i_table_name) );
+    dbms_output.put_line('-----------------------------------------------------');
+    
     l_select_str := 'select rowid, ' || i_field_name || 
                     ' from ' || i_table_name ||
                     ' where ' || i_field_name || ' like ''%,%''';
@@ -51,15 +52,25 @@ declare
       exit when c_records_with_csv_value%notfound;
           
       l_sorted_str :=  sort_csv_string(l_csv_field_value);
-    
+
+      dbms_output.put_line('Original list: [ ' || l_csv_field_value || ' ]' );
+      dbms_output.put_line('Sorted list:   [ ' || l_sorted_str || ' ]');
+      
       l_update_str := 'update ' || i_table_name || 
                       ' set ' || i_field_name || ' = ''' || l_sorted_str ||
                       ''' where rowid = '''  || l_row_id || '''';
+      
+      dbms_output.put_line('Executing: ' || l_update_str);
+      dbms_output.new_line;
       
       execute immediate l_update_str;
       commit;
     
     end loop;
+    
+    dbms_output.put_line('-----------------------------------------------------');
+    dbms_output.new_line;
+    
   end;
 
 
